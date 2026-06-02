@@ -10,20 +10,18 @@ depends=('glibc')
 makedepends=('gcc' 'clang')
 provides=('razer-fn-fix')
 conflicts=('razer-fn-fix')
-source=('razer_driver.c'
-        'razer-fn.service')
+
+source=("${pkgname}::git+https://github.com/Adam-AtlasSoftware/razer-fn-fix.git"
+        "razer-fn.service::https://raw.githubusercontent.com/Adam-AtlasSoftware/razer-fn-fix/master/razer-fn.service")
 sha256sums=('SKIP' 'SKIP')
 
 build() {
-    cd "$srcdir"
+    cd "$srcdir/${pkgname}"
     gcc -O3 razer_driver.c -o razer_driver
 }
 
 package() {
-    cd "$srcdir"
-    # Install Binary
-    install -Dm755 razer_driver "$pkgdir/usr/bin/razer_driver"
-    
-    # Fix: Aligned input filename and updated target path to Arch Linux native spec
-    install -Dm644 razer-fn.service "$pkgdir/usr/lib/systemd/system/razer-fn.service"
+    install -Dm755 "$srcdir/${pkgname}/razer_driver" "$pkgdir/usr/bin/razer_driver"
+
+    install -Dm644 "$srcdir/razer-fn.service" "$pkgdir/usr/lib/systemd/system/razer-fn.service"
 }
