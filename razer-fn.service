@@ -1,0 +1,12 @@
+[Unit]
+Description=Razer BlackWidow V4 Pro JIT Navigation Mod Layer Daemon
+After=local-fs.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/razer_driver
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
