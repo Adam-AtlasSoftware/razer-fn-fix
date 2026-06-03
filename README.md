@@ -1,6 +1,6 @@
 # Razer Fn-Fix Daemon (`razer-fn-fix`)
 
-A blazing-fast, low-level Just-In-Time (JIT) hardware layer daemon that restores missing navigation shortcut functionality (`Home`, `End`, `Print Screen`, `Pause`, `Sleep`) when combining the **Fn** modifier with existing keys on Razer keyboards under Linux.
+A low-level Just-In-Time (JIT) hardware layer daemon that restores missing navigation shortcut functionality (`Home`, `End`, `Print Screen`, `Pause`, `Sleep`) when combining the **Fn** modifier with existing keys on Razer keyboards under Linux.
 
 ---
 
@@ -8,15 +8,13 @@ A blazing-fast, low-level Just-In-Time (JIT) hardware layer daemon that restores
 Many modern Razer keyboards (such as the BlackWidow V4 Pro 75%) handle the `Fn` key via internal hardware profiles or proprietary Windows software (Synapse). Under Linux, holding down `Fn` drops the standard matrix link and fails to map navigation macros, leaving users without standard dedicated keys like `Home`, `End`, or `Print Screen`.
 
 ## The Solution
-`razer-fn-fix` is a secure, lightweight transaction-based system daemon written in pure C.
+`razer-fn-fix` is a secure, lightweight system daemon written in C.
 
 Unlike traditional re-mappers that constantly log your keyboard inputs (creating security risks and latency), this driver runs in a **Passive JIT (Just-In-Time) Interception Layer**:
 1. It sits entirely silent, consuming 0% CPU, while monitoring *only* the low-level hardware `hidraw` channel for the physical `Fn` keypress.
 2. The instant `Fn` is pressed down, it securely grabs exclusive custody of the keyboard matrix.
 3. If you type a designated navigation shortcut, it intercepts it, translates it to the proper key code (`Home`, `End`, etc.), injects it into the kernel virtual user-input stream (`uinput`), and **immediately releases the keyboard**.
 4. If you type any other key (e.g., `Fn + A`), it consumes the keypress and closes the Fn latch state.
-
-This ensures **zero persistent typing overhead, absolute security (no keylogging), and flawless execution speed.**
 
 ## NOTE:
 It is impossible to implement hypershift functionality on Linux exactly as it is on Windows because while the Fn key is held, the keyboard consumes all other keypresses until it receives a hypershift acknowledgement from the system, which is managed by the Razer Synapse driver. Unless this is reverse engineered and the handshake is implemented, no keypresses are sent while Fn is held down.
@@ -104,16 +102,6 @@ To stop or disable the driver background processes:
 sudo systemctl stop razer-fn.service
 sudo systemctl disable razer-fn.service
 ```
-
-## Security & Performance Philosophy
-### No Global Keylogging:
-The daemon does not hold global hooks on your alphanumeric streams. Passwords, terminal entries, and daily typing bypass the application completely at hardware native velocity.
-
-### No Framework Bloat:
-Written entirely in optimized C without dependency layers like glib, libevdev, or Python overhead.
-
-### Coexistence:
-Runs in perfect harmony alongside software suites like OpenRazer or Polychromatic without breaking lighting matrices or RGB profiles.
 
 ## License
 This project is released under the GPL3 License. See LICENSE for details.
