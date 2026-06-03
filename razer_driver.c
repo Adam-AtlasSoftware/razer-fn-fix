@@ -212,7 +212,7 @@ int main() {
             double elapsed = (now.tv_sec - latch_timestamp.tv_sec) +
                              (now.tv_usec - latch_timestamp.tv_usec) / 1000000.0;
             if (elapsed > LATCH_TIMEOUT_SEC) {
-                for (int i = 0; i < kbd_count; i++) ioctl(kbd_fds[k], EVIOCGRAB, 0);
+                for (int i = 0; i < kbd_count; i++) ioctl(kbd_fds[i], EVIOCGRAB, 0);
                 driver_state = 0;
             }
         }
@@ -258,8 +258,6 @@ int main() {
                     driver_state = 2;
                 }
 
-                // FIXED: Shielded with explicit context logic.
-                // Only processes sleep packets if the Fn key modification layer is active.
                 if (hid_buf[2] == 0x4c && driver_state > 0) {
                     emit_key(uinp_fd, KEY_SLEEP, 1); emit_key(uinp_fd, KEY_SLEEP, 0);
                 }
