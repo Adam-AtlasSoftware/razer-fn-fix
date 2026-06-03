@@ -1,13 +1,20 @@
 [Unit]
 Description=Razer JIT Hypershift Modifier Layer Daemon
-After=multi-user.target
+After=uinput.target
+Documentation=https://github.com/Adam-AtlasSoftware/razer-fn-fix
 
 [Service]
 Type=forking
 ExecStart=/usr/bin/razer_driver
 Restart=always
-# Wait 5 seconds before restarting if the keyboard gets disconnected
-RestartSec=5s
+RestartSec=3s
+
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/dev/input /dev/uinput /dev
+PrivateTmp=true
+CapabilityBoundingSet=CAP_SYS_ADMIN
+NoNewPrivileges=true
 
 [Install]
 WantedBy=multi-user.target
