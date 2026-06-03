@@ -1,12 +1,13 @@
 [Unit]
-Description=Razer BlackWidow V4 Pro JIT Navigation Mod Layer Daemon
-After=local-fs.target
+Description=Razer JIT Hypershift Modifier Layer Daemon
+After=multi-user.target
 
 [Service]
 Type=forking
 ExecStart=/usr/bin/razer_driver
 Restart=always
-RestartSec=2
+# Wait 5 seconds before restarting if the keyboard gets disconnected
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
