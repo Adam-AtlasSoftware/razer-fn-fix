@@ -1,107 +1,92 @@
 # Razer Fn-Fix Daemon (`razer-fn-fix`)
 
-A low-level Just-In-Time (JIT) hardware layer daemon that restores missing navigation shortcut functionality (`Home`, `End`, `Print Screen`, `Pause`, `Sleep`) when combining the **Fn** modifier with existing keys on Razer keyboards under Linux.
+System daemon that maps navigation shortcuts (`Home`, `End`, `Print Screen`, `Pause`, `Sleep`) when combining the `Fn` modifier with other keys on Razer keyboards under Linux.
 
----
+## Problem Description
+Many Razer keyboards handle the `Fn` key internally. Under Linux, holding `Fn` prevents standard navigation macros from registering, disabling shortcuts like `Fn` + `PageUp` for `Home`.
 
-## The Problem
-Many modern Razer keyboards (such as the BlackWidow V4 Pro 75%) handle the `Fn` key via internal hardware profiles or proprietary Windows software (Synapse). Under Linux, holding down `Fn` drops the standard matrix link and fails to map navigation macros, leaving users without standard dedicated keys like `Home`, `End`, or `Print Screen`.
+## Solution & Architecture
+`razer-fn-fix` is a background daemon written in C that intercepts inputs to inject custom keycodes:
+1. It monitors `hidraw` or `evdev` nodes for designated modifier sequences.
+2. Upon modifier activation, it grabs custody of the input device.
+3. If a mapped shortcut sequence is typed, it translates the event, injects the new keycode into `/dev/uinput`, and releases the device.
+4. If a non-mapped key is typed or the timeout is reached, it flushes the input buffer and releases the device.
 
-## The Solution
-`razer-fn-fix` is a secure, lightweight system daemon written in C.
-
-Unlike traditional re-mappers that constantly log your keyboard inputs (creating security risks and latency), this driver runs in a **Passive JIT (Just-In-Time) Interception Layer**:
-1. It sits entirely silent, consuming 0% CPU, while monitoring *only* the low-level hardware `hidraw` channel for the physical `Fn` keypress.
-2. The instant `Fn` is pressed down, it securely grabs exclusive custody of the keyboard matrix.
-3. If you type a designated navigation shortcut, it intercepts it, translates it to the proper key code (`Home`, `End`, etc.), injects it into the kernel virtual user-input stream (`uinput`), and **immediately releases the keyboard**.
-4. If you type any other key (e.g., `Fn + A`), it consumes the keypress and closes the Fn latch state.
-
-## NOTE:
-It is impossible to implement hypershift functionality on Linux exactly as it is on Windows because while the Fn key is held, the keyboard consumes all other keypresses until it receives a hypershift acknowledgement from the system, which is managed by the Razer Synapse driver. Unless this is reverse engineered and the handshake is implemented, no keypresses are sent while Fn is held down.
-
-This fix uses a sequential latching state machine instead. When Fn is pressed and released, a latch is toggled that grabs the keyboard and consumes the next key. Rather than holding Fn and then pressing your shortcut key, you must press them sequentially instead.
-
----
-
-## Default Keyboard Mappings
-
-When the `Fn` key is used, the driver intercepts the following matrix codes and morphs them into standard navigation functions:
-
-| Physical Key Combination | Injected System Mapping | Target Functionality |
-| :--- | :--- | :--- |
-| **`Fn`** + **`PageUp`** | `KEY_HOME` | Moves cursor to start of line |
-| **`Fn`** + **`PageDown`** | `KEY_END` | Moves cursor to end of line |
-| **`Fn`** + **`P`** | `KEY_SYSRQ` | Print Screen |
-| **`Fn`** + **`Delete`** | `KEY_SLEEP` | Triggers System Sleep / Suspend |
-| **`Fn`** + **`Insert`** | `KEY_PAUSE` | Pause / Break |
-
----
+## Sequential Latching
+Because the hardware does not always stream concurrent inputs while `Fn` is held, a sequential latching state machine is supported. Pressing and releasing the modifier opens a latch for a configured duration (`latch_timeout_ms`). Shortcuts can be pressed sequentially during this window.
 
 ## Installation
 
-### Arch Linux (via AUR)
-The easiest way to install `razer-fn-fix` on Arch Linux or any Arch-based derivative (like CachyOS, EndeavourOS, or Manjaro) is using an AUR helper such as `yay` or `paru`:
-
+### Arch Linux
+Install from the AUR:
 ```bash
 yay -S razer-fn-fix-git
 ```
+Add user to the input group:
+```bash
+sudo usermod -aG razer-input $USER
+```
 
-### Manual Compilation (Other Distributions)
-Because this daemon depends entirely on native Linux kernel headers (linux/uinput.h), it can be compiled without external libraries on any modern distribution.
-
-#### Clone the repository:
+### Manual Compilation
+Requirements: GCC and Linux kernel headers (`linux/uinput.h`).
 
 ```bash
-git clone [https://github.com/Adam-AtlasSoftware/razer-fn-fix.git](https://github.com/Adam-AtlasSoftware/razer-fn-fix.git)
+git clone https://github.com/Adam-AtlasSoftware/razer-fn-fix.git
 cd razer-fn-fix
-```
-
-#### Compile the source:
-
-```bash
-gcc -O3 razer_driver.c -o razer_driver
-```
-
-#### Deploy the binary and systemd service:
-
-```bash
+gcc -O3 razer_driver.c cJSON.c -lm -o razer_driver
 sudo cp razer_driver /usr/bin/razer_driver
 sudo cp razer-fn.service /usr/lib/systemd/system/razer-fn.service
+sudo cp 99-razer-input.rules /usr/lib/udev/rules.d/99-razer-input.rules
 ```
 
-## Configuration & Customization
-Before launching the daemon, verify your system's hardware event paths inside razer_driver.c. By default, the driver targets standard layouts common to the BlackWidow V4 Pro line:
+## Configuration
 
-```C
-#define TARGET_EVENT_NODE  "/dev/input/event8"
-#define TARGET_HIDRAW_NODE "/dev/hidraw6"
+The daemon parses config files at `/etc/razer-fn/config.json`. It monitors this directory via `inotify` and hot-reloads configuration automatically when changes are written.
+
+### Schema Example (`/etc/razer-fn/config.json`)
+```json
+{
+  "profiles": [
+    {
+      "id": "blackwidow_v4_pro_75_wired",
+      "user_name": "My Main BlackWidow 75%",
+      "hardware_match": "PRODUCT=3/1532/02a6",
+      "enabled": true,
+      "latch_timeout_ms": 1500,
+      "modifiers": [
+        {
+          "name": "Fn",
+          "type": "hidraw",
+          "activation_sequence": ["0x04", "0x01"],
+          "release_sequence": ["0x04", "0x00", "0x05", "0x51", "0x01"]
+        }
+      ],
+      "macros": [
+        {
+          "modifier": "Fn",
+          "sequence": ["KEY_PAGEUP"],
+          "output": "KEY_HOME",
+          "action_type": "remap"
+        }
+      ]
+    }
+  ]
+}
 ```
 
-If your desktop configuration maps your keyboard matrix or raw HID signals to different hardware channels, look them up using lsinput or evtest, adjust those strings in razer_driver.c, and recompile.
+### Default Fallback
+If no config file is present, the daemon uses a built-in fallback mapping for standard Razer devices:
+- `Fn` + `PageUp` -> `KEY_HOME`
+- `Fn` + `PageDown` -> `KEY_END`
+- `Fn` + `P` -> `KEY_SYSRQ` (Print Screen)
+- `Fn` + `Delete` -> `KEY_SLEEP`
+- `Fn` + `Insert` -> `KEY_PAUSE`
 
-## Execution & Lifecycle Management
-Start and enable the background daemon using systemd:
-
+## Service Management
 ```bash
-# Start the driver immediately
-sudo systemctl start razer-fn.service
-
-# Enable it to run automatically on system boot
-sudo systemctl enable razer-fn.service
-```
-
-To monitor driver states or confirm execution stability:
-
-```bash
-sudo systemctl status razer-fn.service
-```
-
-To stop or disable the driver background processes:
-
-```bash
-sudo systemctl stop razer-fn.service
-sudo systemctl disable razer-fn.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now razer-fn.service
 ```
 
 ## License
-This project is released under the GPL3 License. See LICENSE for details.
+GPL3.

@@ -1,0 +1,3 @@
+# Assign Razer hardware nodes to the razer-input group for UI capture
+SUBSYSTEM=="input", ATTRS{idVendor}=="1532", GROUP="razer-input", MODE="0660"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1532", GROUP="razer-input", MODE="0660"

@@ -1,5 +1,5 @@
 [Unit]
-Description=Razer JIT Hypershift Modifier Layer Daemon
+Description=Razer JIT Fn-Key Layer Fix Daemon
 After=uinput.target
 Documentation=https://github.com/Adam-AtlasSoftware/razer-fn-fix
 
@@ -8,10 +8,9 @@ Type=forking
 ExecStart=/usr/bin/razer_driver
 Restart=always
 RestartSec=3s
-
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/dev/input /dev/uinput /dev
+ReadWritePaths=/dev/input /dev/uinput /dev /etc/razer-fn
 PrivateTmp=true
 CapabilityBoundingSet=CAP_SYS_ADMIN
 NoNewPrivileges=true
