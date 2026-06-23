@@ -1,11 +1,11 @@
 [Unit]
 Description=Razer JIT Fn-Key Layer Fix Daemon
-After=uinput.target
+After=dev-uinput.device
 Documentation=https://github.com/Adam-AtlasSoftware/razer-fn-fix
 
 [Service]
-Type=forking
-ExecStart=/usr/bin/razer_driver
+Type=simple
+ExecStart=/usr/bin/razer_driver -f
 Restart=always
 RestartSec=3s
 ProtectSystem=strict

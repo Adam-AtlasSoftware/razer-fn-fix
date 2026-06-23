@@ -370,6 +370,13 @@ void load_config() {
     }
 
     cJSON_Delete(root);
+
+    if (profile_count == 0) {
+        log_msg(LOG_WARNING, "No profiles found in config. Using default fallback profile.");
+        setup_default_fallback();
+        return;
+    }
+
     log_msg(LOG_INFO, "Config loaded. Found %d profiles.", profile_count);
 }
 
