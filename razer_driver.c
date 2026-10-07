@@ -1,3 +1,7 @@
+/* vsyslog() and daemon() are glibc extensions; _GNU_SOURCE must be defined
+   before any system header so the build is independent of the -std= mode. */
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
