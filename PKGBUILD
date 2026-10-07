@@ -1,7 +1,7 @@
 # Maintainer: Adam <adam@atlas-sw.com>
 pkgname=razer-fn-fix-git
 pkgver=1.2.0
-pkgrel=1
+pkgrel=2
 pkgdesc="JIT low-level hypershift key layer fix for Razer Keyboards."
 arch=('x86_64' 'aarch64')
 url="https://github.com/Adam-AtlasSoftware/razer-fn-fix"
