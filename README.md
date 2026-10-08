@@ -89,4 +89,4 @@ sudo systemctl enable --now razer-fn.service
 ```
 
 ## License
-GPL3.
+GPL-3.0-only. Bundled [cJSON](https://github.com/DaveGamble/cJSON) (`cJSON.c`, `cJSON.h`) is MIT-licensed; see `LICENSE.cJSON`.
